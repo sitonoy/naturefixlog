@@ -152,7 +152,6 @@ export default function HomeTab() {
       <div className="w-full text-center pt-10 mb-6">
         <h1 className="text-2xl font-bold text-green-400 tracking-wide">NatureFixログ</h1>
         <p className="text-xs text-gray-500 mt-1 tracking-widest uppercase">リラックスできる場所の記録</p>
-        <p className="text-gray-600 text-sm mt-2">累計 {totalCount} 件の記録</p>
       </div>
 
       {/* Location & Weather chips */}

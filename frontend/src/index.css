@@ -26,3 +26,6 @@ body {
 .leaflet-popup-tip {
   background: #1f2937;
 }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

@@ -30,6 +30,8 @@ function computeHourData(logs) {
   }));
 }
 
+const ACTION_ORDER = ['walk', 'stay', 'pass'];
+
 function computeActionData(logs) {
   const map = {};
   logs.forEach(l => {
@@ -37,12 +39,14 @@ function computeActionData(logs) {
     map[l.action_type].cnt++;
     map[l.action_type].total += l.intensity;
   });
-  return Object.entries(map).map(([k, v]) => ({
-    key: k,
-    name: ACTION_LABEL[k] || k,
-    value: v.cnt,
-    avg: (v.total / v.cnt).toFixed(1),
-  }));
+  return ACTION_ORDER
+    .filter(k => map[k])
+    .map(k => ({
+      key: k,
+      name: ACTION_LABEL[k] || k,
+      value: map[k].cnt,
+      avg: (map[k].total / map[k].cnt).toFixed(1),
+    }));
 }
 
 export default function AnalyticsTab() {
