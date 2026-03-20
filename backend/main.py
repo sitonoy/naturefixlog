@@ -74,7 +74,8 @@ class LogCreate(BaseModel):
 
 class LogUpdate(BaseModel):
     action_type: str
-    note: str       # "" で NULL にクリア
+    intensity: int
+    note: str        # "" で NULL にクリア
     image_data: str  # "" で NULL にクリア
 
 
@@ -130,10 +131,11 @@ def update_log(log_id: int, updates: LogUpdate):
     c = cur(conn)
     c.execute(
         """UPDATE logs
-           SET action_type = %s, note = %s, image_data = %s
+           SET action_type = %s, intensity = %s, note = %s, image_data = %s
            WHERE id = %s RETURNING *""",
         (
             updates.action_type,
+            updates.intensity,
             updates.note if updates.note else None,
             updates.image_data if updates.image_data else None,
             log_id,

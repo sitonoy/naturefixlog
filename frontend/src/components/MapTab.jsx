@@ -39,10 +39,56 @@ const resizeImage = (file) => new Promise((resolve) => {
   reader.readAsDataURL(file);
 });
 
+// ─── 押下フィードバック付きボタン ──────────────────────────────────────────
+function Btn({ onClick, disabled, bg, pressedBg, color, children, style }) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      onPointerDown={() => !disabled && setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      style={{
+        border: 'none', borderRadius: 6, cursor: disabled ? 'default' : 'pointer',
+        padding: '5px 10px', fontSize: 12, transition: 'background 0.12s',
+        background: pressed ? pressedBg : bg,
+        color, ...style,
+      }}
+    >{children}</button>
+  );
+}
+
+// ─── 全画面イメージプレビュー ───────────────────────────────────────────────
+function ImagePreview({ src, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0,0,0,0.92)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <img src={src} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} alt="" />
+      <button
+        onClick={onClose}
+        style={{
+          position: 'absolute', top: 20, right: 20,
+          background: 'rgba(255,255,255,0.15)', border: 'none',
+          color: 'white', borderRadius: '50%', width: 36, height: 36,
+          cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >✕</button>
+    </div>
+  );
+}
+
 // ─── BottomSheetCard ─────────────────────────────────────────────────────────
-function BottomSheetCard({ log, onDelete, onUpdate }) {
-  const [mode, setMode] = useState('view'); // 'view' | 'edit' | 'confirm-delete'
+function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
+  const [mode, setMode] = useState('view');
   const [editAction, setEditAction] = useState(log.action_type);
+  const [editIntensity, setEditIntensity] = useState(log.intensity);
   const [editNote, setEditNote] = useState(log.note || '');
   const [editImage, setEditImage] = useState(log.image_data || null);
   const [busy, setBusy] = useState(false);
@@ -50,6 +96,7 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
 
   useEffect(() => {
     setEditAction(log.action_type);
+    setEditIntensity(log.intensity);
     setEditNote(log.note || '');
     setEditImage(log.image_data || null);
     setMode('view');
@@ -57,6 +104,7 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
 
   const enterEdit = () => {
     setEditAction(log.action_type);
+    setEditIntensity(log.intensity);
     setEditNote(log.note || '');
     setEditImage(log.image_data || null);
     setMode('edit');
@@ -81,7 +129,12 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
       const res = await fetch(`${API}/logs/${log.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action_type: editAction, note: editNote, image_data: editImage || '' }),
+        body: JSON.stringify({
+          action_type: editAction,
+          intensity: editIntensity,
+          note: editNote,
+          image_data: editImage || '',
+        }),
       });
       onUpdate(await res.json());
       setMode('view');
@@ -89,15 +142,13 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
     setBusy(false);
   };
 
-  const btn = { border: 'none', borderRadius: 6, cursor: 'pointer', padding: '5px 10px', fontSize: 12 };
-
   if (mode === 'confirm-delete') return (
     <div style={{ padding: '14px 16px' }}>
       <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 'bold', color: '#ef4444' }}>削除しますか？</p>
       <p style={{ margin: '0 0 12px', fontSize: 11, color: '#9ca3af' }}>この操作は元に戻せません</p>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => setMode('view')} style={{ ...btn, flex: 1, background: '#374151', color: '#d1d5db' }}>キャンセル</button>
-        <button onClick={handleDelete} disabled={busy} style={{ ...btn, flex: 1, background: '#dc2626', color: 'white' }}>削除する</button>
+        <Btn onClick={() => setMode('view')} bg="#374151" pressedBg="#1f2937" color="#d1d5db" style={{ flex: 1 }}>キャンセル</Btn>
+        <Btn onClick={handleDelete} disabled={busy} bg="#dc2626" pressedBg="#991b1b" color="white" style={{ flex: 1 }}>削除する</Btn>
       </div>
     </div>
   );
@@ -105,39 +156,67 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
   if (mode === 'edit') return (
     <div style={{ padding: '12px 16px', overflowY: 'auto', height: '100%', boxSizing: 'border-box' }}>
       <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 'bold', color: 'white' }}>編集</p>
+
+      {/* 行動タイプ */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
         {ACTION_TYPES.map(a => (
-          <button key={a.id} onClick={() => setEditAction(a.id)} style={{
-            flex: 1, padding: '4px 2px', fontSize: 10, borderRadius: 4, cursor: 'pointer',
-            border: `1px solid ${editAction === a.id ? '#22c55e' : '#374151'}`,
-            background: editAction === a.id ? '#14532d' : '#1f2937',
-            color: editAction === a.id ? '#4ade80' : '#9ca3af',
-          }}>{a.label}</button>
+          <Btn key={a.id} onClick={() => setEditAction(a.id)}
+            bg={editAction === a.id ? '#14532d' : '#1f2937'}
+            pressedBg={editAction === a.id ? '#052e16' : '#111827'}
+            color={editAction === a.id ? '#4ade80' : '#9ca3af'}
+            style={{ flex: 1, fontSize: 10, border: `1px solid ${editAction === a.id ? '#22c55e' : '#374151'}`, borderRadius: 4 }}
+          >{a.label}</Btn>
         ))}
       </div>
+
+      {/* 強度 */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+        {[1, 2, 3].map(v => (
+          <Btn key={v} onClick={() => setEditIntensity(v)}
+            bg={editIntensity === v ? '#713f12' : '#1f2937'}
+            pressedBg={editIntensity === v ? '#451a03' : '#111827'}
+            color={editIntensity === v ? '#fbbf24' : '#9ca3af'}
+            style={{ flex: 1, fontSize: 11, border: `1px solid ${editIntensity === v ? '#eab308' : '#374151'}`, borderRadius: 4 }}
+          >{'⭐'.repeat(v)}</Btn>
+        ))}
+      </div>
+
+      {/* メモ */}
       <textarea value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="メモ" rows={2}
         style={{ width: '100%', background: '#1f2937', color: 'white', border: '1px solid #374151', borderRadius: 4, padding: '4px 6px', fontSize: 12, resize: 'none', boxSizing: 'border-box', marginBottom: 6 }}
       />
+
+      {/* 写真 */}
       {editImage ? (
         <div style={{ position: 'relative', marginBottom: 6 }}>
           <img src={editImage} style={{ width: '100%', maxHeight: 72, objectFit: 'cover', borderRadius: 4 }} alt="" />
-          <button onClick={() => setEditImage(null)} style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 10 }}>✕</button>
+          <button onClick={() => setEditImage(null)}
+            style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 10 }}>✕</button>
         </div>
       ) : (
-        <button onClick={() => imgRef.current?.click()} style={{ width: '100%', padding: '4px', background: '#1f2937', color: '#9ca3af', border: '1px dashed #374151', borderRadius: 4, cursor: 'pointer', fontSize: 11, marginBottom: 6 }}>📷 写真を追加</button>
+        <Btn onClick={() => imgRef.current?.click()} bg="#1f2937" pressedBg="#111827" color="#9ca3af"
+          style={{ width: '100%', marginBottom: 6, border: '1px dashed #374151', borderRadius: 4, fontSize: 11, padding: '4px' }}
+        >📷 写真を追加</Btn>
       )}
       <input ref={imgRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
+
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => setMode('view')} style={{ ...btn, flex: 1, background: '#374151', color: '#d1d5db' }}>キャンセル</button>
-        <button onClick={handleSave} disabled={busy} style={{ ...btn, flex: 1, background: '#16a34a', color: 'white' }}>保存</button>
+        <Btn onClick={() => setMode('view')} bg="#374151" pressedBg="#1f2937" color="#d1d5db" style={{ flex: 1 }}>キャンセル</Btn>
+        <Btn onClick={handleSave} disabled={busy} bg="#16a34a" pressedBg="#14532d" color="white" style={{ flex: 1 }}>保存</Btn>
       </div>
     </div>
   );
 
+  // view mode
   return (
     <div style={{ padding: '12px 16px', display: 'flex', gap: 10, height: '100%', overflowY: 'auto', boxSizing: 'border-box' }}>
       {log.image_data && (
-        <img src={log.image_data} style={{ width: 68, height: 68, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} alt="" />
+        <img
+          src={log.image_data}
+          onClick={() => onPreview(log.image_data)}
+          style={{ width: 68, height: 68, borderRadius: 8, objectFit: 'cover', flexShrink: 0, cursor: 'pointer' }}
+          alt=""
+        />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: '0 0 2px', fontSize: 14, fontWeight: 'bold', color: 'white' }}>
@@ -151,10 +230,10 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
           {new Date(log.timestamp).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
         </p>
         <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={enterEdit} style={{ ...btn, background: '#1e3a8a', color: '#93c5fd' }}>編集</button>
-          <button onClick={() => setMode('confirm-delete')} style={{ ...btn, background: '#450a0a', color: '#fca5a5' }}>削除</button>
+          <Btn onClick={enterEdit} bg="#1e3a8a" pressedBg="#172554" color="#93c5fd">編集</Btn>
+          <Btn onClick={() => setMode('confirm-delete')} bg="#450a0a" pressedBg="#3b0707" color="#fca5a5">削除</Btn>
           <a href={`https://maps.google.com/?q=${log.lat},${log.lng}`} target="_blank" rel="noopener noreferrer"
-            style={{ ...btn, background: '#1f2937', color: '#60a5fa', textDecoration: 'none', display: 'inline-block' }}>地図</a>
+            style={{ border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, background: '#1f2937', color: '#60a5fa', textDecoration: 'none', display: 'inline-block' }}>地図</a>
         </div>
       </div>
     </div>
@@ -162,7 +241,7 @@ function BottomSheetCard({ log, onDelete, onUpdate }) {
 }
 
 // ─── BottomSheet ──────────────────────────────────────────────────────────────
-function BottomSheet({ logs, onClose, onDelete, onUpdate }) {
+function BottomSheet({ logs, onClose, onDelete, onUpdate, onPreview }) {
   const [index, setIndex] = useState(0);
   const scrollRef = useRef(null);
 
@@ -195,7 +274,8 @@ function BottomSheet({ logs, onClose, onDelete, onUpdate }) {
         <span style={{ fontSize: 12, color: '#9ca3af', flex: 1, marginTop: 6 }}>
           {logs.length > 1 ? `${index + 1} / ${logs.length} スポット` : '1 スポット'}
         </span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 18, padding: 0, marginTop: 4 }}>✕</button>
+        <Btn onClick={onClose} bg="transparent" pressedBg="rgba(255,255,255,0.1)" color="#6b7280"
+          style={{ padding: '2px 6px', fontSize: 18, marginTop: 4 }}>✕</Btn>
       </div>
 
       {/* Carousel */}
@@ -207,7 +287,7 @@ function BottomSheet({ logs, onClose, onDelete, onUpdate }) {
       >
         {logs.map((l) => (
           <div key={l.id} style={{ minWidth: '100%', scrollSnapAlign: 'start', overflowY: 'auto' }}>
-            <BottomSheetCard log={l} onDelete={onDelete} onUpdate={onUpdate} />
+            <BottomSheetCard log={l} onDelete={onDelete} onUpdate={onUpdate} onPreview={onPreview} />
           </div>
         ))}
       </div>
@@ -227,7 +307,7 @@ function BottomSheet({ logs, onClose, onDelete, onUpdate }) {
   );
 }
 
-// ─── ClusterLayer（MapContainer内） ────────────────────────────────────────
+// ─── ClusterLayer ─────────────────────────────────────────────────────────────
 function ClusterLayer({ logs, onSelect }) {
   const map = useMap();
   const [clusters, setClusters] = useState([]);
@@ -310,6 +390,7 @@ export default function MapTab({ isActive }) {
   const [recentered, setRecentered] = useState(false);
   const [currentPos, setCurrentPos] = useState(null);
   const [bottomSheetLogs, setBottomSheetLogs] = useState(null);
+  const [previewSrc, setPreviewSrc] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -375,7 +456,7 @@ export default function MapTab({ isActive }) {
       {/* Locate button */}
       <button
         onClick={() => currentPos && mapRef.current?.setView(currentPos, 16)}
-        className="absolute bottom-6 right-4 z-[1000] bg-gray-900/90 text-green-400 text-xs font-medium px-3 py-2 rounded-full border border-green-800 shadow-lg"
+        className="absolute bottom-6 right-4 z-[1000] bg-gray-900/90 text-green-400 text-xs font-medium px-3 py-2 rounded-full border border-green-800 shadow-lg active:bg-gray-800"
       >現在地</button>
 
       <MapContainer ref={mapRef} center={center} zoom={14} style={{ height: '100%', width: '100%' }}>
@@ -394,15 +475,17 @@ export default function MapTab({ isActive }) {
         <ClusterLayer logs={filtered} onSelect={setBottomSheetLogs} />
       </MapContainer>
 
-      {/* Bottom sheet */}
       {bottomSheetLogs && (
         <BottomSheet
           logs={bottomSheetLogs}
           onClose={() => setBottomSheetLogs(null)}
           onDelete={handleDelete}
           onUpdate={handleUpdate}
+          onPreview={setPreviewSrc}
         />
       )}
+
+      {previewSrc && <ImagePreview src={previewSrc} onClose={() => setPreviewSrc(null)} />}
 
       {logs.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center z-[500] pointer-events-none">
