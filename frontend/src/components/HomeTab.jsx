@@ -205,11 +205,7 @@ export default function HomeTab() {
       <div className="w-full mb-6">
         <p className="text-gray-400 text-xs mb-3 text-center tracking-widest uppercase">回復強度</p>
         <div className="flex gap-3">
-          {[
-            { v: 1, label: 'やや', stars: '⭐' },
-            { v: 2, label: 'まあまあ', stars: '⭐⭐' },
-            { v: 3, label: 'とても', stars: '⭐⭐⭐' },
-          ].map(({ v, label, stars }) => (
+          {[1, 2, 3].map(v => (
             <button
               key={v}
               onClick={() => setIntensity(v)}
@@ -219,8 +215,7 @@ export default function HomeTab() {
                   : 'bg-gray-800/60 border-gray-700 text-gray-500'
               }`}
             >
-              <div className="text-sm">{stars}</div>
-              <div className="text-xs mt-1">{label}</div>
+              <div className="text-sm">{'⭐'.repeat(v)}</div>
             </button>
           ))}
         </div>
