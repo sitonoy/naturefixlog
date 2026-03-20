@@ -96,8 +96,10 @@ export default function HomeTab() {
     }
   };
 
+  const isReady = backendReady && (location !== null || locError);
+
   const btnStyle =
-    !backendReady
+    !isReady
       ? 'bg-gray-700 animate-pulse cursor-not-allowed'
       : status === 'success'
       ? 'bg-green-400 scale-110 shadow-green-400/60'
@@ -129,10 +131,10 @@ export default function HomeTab() {
       {/* Main Button */}
       <button
         onClick={handleLog}
-        disabled={!backendReady || status === 'loading'}
+        disabled={!isReady || status === 'loading'}
         className={`w-44 h-44 rounded-full text-xl font-bold shadow-2xl transition-all duration-300 mb-10 ${btnStyle}`}
       >
-        {!backendReady ? '準備中...' : status === 'success' ? '✓ 記録完了' : status === 'error' ? '❌ 失敗' : '位置を記録'}
+        {!isReady ? '準備中...' : status === 'success' ? '✓ 記録完了' : status === 'error' ? '❌ 失敗' : '位置を記録'}
       </button>
 
       {/* Action Type */}

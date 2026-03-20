@@ -10,7 +10,7 @@ const FILTER_OPTIONS = [
   { id: 'all', label: 'すべて' },
   { id: 'walk', label: '🚶' },
   { id: 'stay', label: '🪑' },
-  { id: 'pass', label: '✨' },
+  { id: 'pass', label: '🧍' },
 ];
 
 function RecenterOnLoad({ center }) {
@@ -51,7 +51,7 @@ export default function MapTab() {
   const filtered = filter === 'all' ? logs : logs.filter(l => l.action_type === filter);
 
   return (
-    <div className="relative pb-16" style={{ height: '100dvh' }}>
+    <div className="relative" style={{ height: 'calc(100dvh - 64px)' }}>
       {/* Filter bar */}
       <div className="absolute top-3 left-0 right-0 z-[1000] flex justify-center gap-2 px-4">
         {FILTER_OPTIONS.map(f => (
