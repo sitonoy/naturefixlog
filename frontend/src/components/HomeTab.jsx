@@ -65,12 +65,12 @@ export default function HomeTab() {
 
   const fetchWeather = useCallback((lat, lng) => {
     fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weathercode`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code&temperature_unit=celsius`
     )
       .then(r => r.json())
       .then(data => {
-        const code = data.current.weathercode;
-        const temp = data.current.temperature_2m;
+        const code = data.current.weather_code;
+        const temp = Math.round(data.current.temperature_2m * 10) / 10;
         setWeather({ ...weatherCodeToInfo(code), temp });
       })
       .catch(() => {});
@@ -203,7 +203,7 @@ export default function HomeTab() {
 
       {/* Intensity */}
       <div className="w-full mb-6">
-        <p className="text-gray-400 text-xs mb-3 text-center tracking-widest uppercase">回復強度</p>
+        <p className="text-gray-400 text-xs mb-3 text-center tracking-widest uppercase">リラックス度</p>
         <div className="flex gap-3">
           {[1, 2, 3].map(v => (
             <button

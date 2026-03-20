@@ -20,21 +20,26 @@ const FILTER_OPTIONS = [
 
 const resizeImage = (file) => new Promise((resolve) => {
   const reader = new FileReader();
+  reader.onerror = () => resolve(null);
   reader.onload = (e) => {
+    const dataUrl = e.target.result;
     const img = new Image();
+    img.onerror = () => resolve(dataUrl);
     img.onload = () => {
-      const MAX = 800;
-      let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
+      try {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      } catch { resolve(dataUrl); }
     };
-    img.src = e.target.result;
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
 });
@@ -113,7 +118,8 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
   const handleImageSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setEditImage(await resizeImage(file));
+    const resized = await resizeImage(file);
+    if (resized) setEditImage(resized);
     e.target.value = '';
   };
 
