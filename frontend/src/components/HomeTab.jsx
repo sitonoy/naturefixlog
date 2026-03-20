@@ -18,25 +18,32 @@ const weatherCodeToInfo = (code) => {
   return { main: 'Thunder', label: '雷雨', emoji: '⛈️' };
 };
 
-// 画像を最大800pxにリサイズしてJPEG base64で返す
+// 画像を最大800pxにリサイズしてJPEG base64で返す（エラー時は元データにフォールバック）
 const resizeImage = (file) => new Promise((resolve) => {
   const reader = new FileReader();
+  reader.onerror = () => resolve(null);
   reader.onload = (e) => {
+    const dataUrl = e.target.result;
     const img = new Image();
+    img.onerror = () => resolve(dataUrl); // HEIC等で失敗した場合は元データを使用
     img.onload = () => {
-      const MAX = 800;
-      let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
+      try {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      } catch {
+        resolve(dataUrl);
       }
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.7));
     };
-    img.src = e.target.result;
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
 });
@@ -91,7 +98,7 @@ export default function HomeTab() {
     const file = e.target.files?.[0];
     if (!file) return;
     const resized = await resizeImage(file);
-    setImageData(resized);
+    if (resized) setImageData(resized);
     e.target.value = '';
   };
 

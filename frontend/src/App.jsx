@@ -34,8 +34,11 @@ export default function App() {
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-gray-950">
       {activeTab === 'home' && <HomeTab />}
-      {/* MapTab は常時マウント — Leaflet 著作権表示の漏れ防止 */}
-      <div style={{ display: activeTab === 'map' ? 'block' : 'none' }}>
+      {/* MapTab は常時マウント — visibility:hidden でLeafletのサイズ計算を維持 */}
+      <div style={activeTab === 'map' ? undefined : {
+        position: 'absolute', top: 0, left: 0, right: 0,
+        visibility: 'hidden', pointerEvents: 'none',
+      }}>
         <MapTab isActive={activeTab === 'map'} />
       </div>
       {activeTab === 'analytics' && <AnalyticsTab />}

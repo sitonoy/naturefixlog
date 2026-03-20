@@ -11,9 +11,13 @@ const ACTION_COLORS = { walk: '#60a5fa', stay: '#f59e0b', pass: '#a78bfa' };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
+  // 時間帯グラフ（hour が数値）のラベルを "19:00〜20:00" 形式に変換
+  const displayLabel = typeof label === 'number'
+    ? `${label}:00〜${label + 1}:00`
+    : label;
   return (
     <div className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white shadow">
-      <p className="font-medium">{label}</p>
+      <p className="font-medium">{displayLabel}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color }}>{p.name}: {p.value}</p>
       ))}
@@ -110,7 +114,7 @@ export default function AnalyticsTab() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white px-4 pb-24">
-      <h1 className="text-xl font-bold text-green-400 pt-10 mb-6">記録パターン分析</h1>
+      <h1 className="text-xl font-bold text-green-400 pt-10 mb-6">ログ分析</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
