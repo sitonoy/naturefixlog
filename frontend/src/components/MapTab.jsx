@@ -21,13 +21,21 @@ function RecenterOnLoad({ center }) {
   return null;
 }
 
-export default function MapTab() {
+export default function MapTab({ isActive }) {
   const [logs, setLogs] = useState([]);
   const [center, setCenter] = useState([35.6762, 139.6503]);
   const [filter, setFilter] = useState('all');
   const [recentered, setRecentered] = useState(false);
   const [currentPos, setCurrentPos] = useState(null);
   const mapRef = useRef(null);
+
+  // display:none から表示に切り替わった際に Leaflet のサイズを再計算
+  useEffect(() => {
+    if (isActive) {
+      const t = setTimeout(() => mapRef.current?.invalidateSize(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [isActive]);
 
   useEffect(() => {
     fetch(`${API}/logs`)
@@ -86,10 +94,9 @@ export default function MapTab() {
       {/* Locate button */}
       <button
         onClick={handleLocate}
-        className="absolute bottom-6 right-4 z-[1000] bg-white rounded-full w-11 h-11 shadow-lg flex items-center justify-center text-xl border border-gray-200"
-        title="現在地へ移動"
+        className="absolute bottom-6 right-4 z-[1000] bg-gray-900/90 text-green-400 text-xs font-medium px-3 py-2 rounded-full border border-green-800 shadow-lg"
       >
-        🎯
+        現在地
       </button>
 
       <MapContainer

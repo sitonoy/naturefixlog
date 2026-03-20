@@ -36,7 +36,7 @@ export default function App() {
       {activeTab === 'home' && <HomeTab />}
       {/* MapTab は常時マウント — Leaflet 著作権表示の漏れ防止 */}
       <div style={{ display: activeTab === 'map' ? 'block' : 'none' }}>
-        <MapTab />
+        <MapTab isActive={activeTab === 'map'} />
       </div>
       {activeTab === 'analytics' && <AnalyticsTab />}
       {activeTab === 'recommend' && <RecommendTab />}
