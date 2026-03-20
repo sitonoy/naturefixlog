@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -27,6 +27,7 @@ export default function MapTab() {
   const [filter, setFilter] = useState('all');
   const [recentered, setRecentered] = useState(false);
   const [currentPos, setCurrentPos] = useState(null);
+  const mapRef = useRef(null);
 
   useEffect(() => {
     fetch(`${API}/logs`)
@@ -49,6 +50,12 @@ export default function MapTab() {
   }, []);
 
   const filtered = filter === 'all' ? logs : logs.filter(l => l.action_type === filter);
+
+  const handleLocate = () => {
+    if (currentPos && mapRef.current) {
+      mapRef.current.setView(currentPos, 16);
+    }
+  };
 
   return (
     <div className="relative" style={{ height: 'calc(100dvh - 64px)' }}>
@@ -76,7 +83,17 @@ export default function MapTab() {
         </span>
       </div>
 
+      {/* Locate button */}
+      <button
+        onClick={handleLocate}
+        className="absolute bottom-6 right-4 z-[1000] bg-white rounded-full w-11 h-11 shadow-lg flex items-center justify-center text-xl border border-gray-200"
+        title="現在地へ移動"
+      >
+        🎯
+      </button>
+
       <MapContainer
+        ref={mapRef}
         center={center}
         zoom={14}
         style={{ height: '100%', width: '100%' }}

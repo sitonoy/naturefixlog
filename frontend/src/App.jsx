@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import HomeTab from './components/HomeTab';
 import MapTab from './components/MapTab';
 import AnalyticsTab from './components/AnalyticsTab';
@@ -12,12 +12,32 @@ const TABS = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.slice(1);
+    return TABS.some(t => t.id === hash) ? hash : 'home';
+  });
+
+  useEffect(() => {
+    const onHash = () => {
+      const hash = window.location.hash.slice(1);
+      if (TABS.some(t => t.id === hash)) setActiveTab(hash);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const handleTabChange = (id) => {
+    window.location.hash = id;
+    setActiveTab(id);
+  };
 
   return (
     <div className="max-w-md mx-auto relative min-h-screen bg-gray-950">
       {activeTab === 'home' && <HomeTab />}
-      {activeTab === 'map' && <MapTab />}
+      {/* MapTab は常時マウント — Leaflet 著作権表示の漏れ防止 */}
+      <div style={{ display: activeTab === 'map' ? 'block' : 'none' }}>
+        <MapTab />
+      </div>
       {activeTab === 'analytics' && <AnalyticsTab />}
       {activeTab === 'recommend' && <RecommendTab />}
 
@@ -25,7 +45,7 @@ export default function App() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={`flex-1 flex flex-col items-center py-3 transition-all ${
               activeTab === tab.id ? 'text-green-400' : 'text-gray-500 hover:text-gray-300'
             }`}
