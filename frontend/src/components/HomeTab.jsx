@@ -27,6 +27,7 @@ export default function HomeTab() {
   const [note, setNote] = useState('');
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [totalCount, setTotalCount] = useState(0);
+  const [backendReady, setBackendReady] = useState(false);
 
   const fetchWeather = useCallback((lat, lng) => {
     fetch(
@@ -55,8 +56,8 @@ export default function HomeTab() {
 
     fetch(`${API}/stats`)
       .then(r => r.json())
-      .then(d => setTotalCount(d.total))
-      .catch(() => {});
+      .then(d => { setTotalCount(d.total); setBackendReady(true); })
+      .catch(() => setBackendReady(true)); // エラーでも解放
   }, [fetchWeather]);
 
   const handleLog = async () => {
@@ -96,7 +97,9 @@ export default function HomeTab() {
   };
 
   const btnStyle =
-    status === 'success'
+    !backendReady
+      ? 'bg-gray-700 animate-pulse cursor-not-allowed'
+      : status === 'success'
       ? 'bg-green-400 scale-110 shadow-green-400/60'
       : status === 'loading'
       ? 'bg-green-700 animate-pulse cursor-not-allowed'
@@ -109,7 +112,8 @@ export default function HomeTab() {
       {/* Header */}
       <div className="w-full text-center pt-10 mb-6">
         <h1 className="text-2xl font-bold text-green-400 tracking-wide">NatureFixログ</h1>
-        <p className="text-gray-500 text-sm mt-1">累計 {totalCount} 件の記録</p>
+        <p className="text-xs text-gray-500 mt-1 tracking-widest uppercase">リラックスできる場所の記録</p>
+        <p className="text-gray-600 text-sm mt-2">累計 {totalCount} 件の記録</p>
       </div>
 
       {/* Location & Weather chips */}
@@ -125,10 +129,10 @@ export default function HomeTab() {
       {/* Main Button */}
       <button
         onClick={handleLog}
-        disabled={status === 'loading'}
+        disabled={!backendReady || status === 'loading'}
         className={`w-44 h-44 rounded-full text-xl font-bold shadow-2xl transition-all duration-300 mb-10 ${btnStyle}`}
       >
-        {status === 'success' ? '✓ 記録しました' : status === 'error' ? '❌ 失敗' : 'この場所を\n記録する'}
+        {!backendReady ? '準備中...' : status === 'success' ? '✓ 記録完了' : status === 'error' ? '❌ 失敗' : '位置を記録'}
       </button>
 
       {/* Action Type */}
