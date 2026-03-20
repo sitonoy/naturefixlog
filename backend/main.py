@@ -20,7 +20,6 @@ app.add_middleware(
 )
 
 _DATABASE_URL = os.environ["DATABASE_URL"]
-# Supabase は postgres:// を返すが psycopg2 は postgresql:// が必要
 DATABASE_URL = _DATABASE_URL.replace("postgres://", "postgresql://", 1) if _DATABASE_URL.startswith("postgres://") else _DATABASE_URL
 
 
@@ -47,9 +46,12 @@ def init_db():
             weather_desc TEXT,
             weather_temp REAL,
             note TEXT,
+            image_data TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # 既存テーブルへの後付けカラム追加
+    c.execute("ALTER TABLE logs ADD COLUMN IF NOT EXISTS image_data TEXT")
     conn.commit()
     c.close()
     conn.close()
@@ -67,6 +69,13 @@ class LogCreate(BaseModel):
     weather_desc: Optional[str] = None
     weather_temp: Optional[float] = None
     note: Optional[str] = None
+    image_data: Optional[str] = None
+
+
+class LogUpdate(BaseModel):
+    action_type: str
+    note: str       # "" で NULL にクリア
+    image_data: str  # "" で NULL にクリア
 
 
 class LogResponse(BaseModel):
@@ -80,6 +89,7 @@ class LogResponse(BaseModel):
     weather_desc: Optional[str]
     weather_temp: Optional[float]
     note: Optional[str]
+    image_data: Optional[str]
 
 
 @app.post("/logs", response_model=LogResponse)
@@ -89,11 +99,12 @@ def create_log(log: LogCreate):
     c = cur(conn)
     c.execute(
         """INSERT INTO logs (timestamp, lat, lng, action_type, intensity,
-           weather_main, weather_desc, weather_temp, note)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+           weather_main, weather_desc, weather_temp, note, image_data)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
            RETURNING *""",
         (now, log.lat, log.lng, log.action_type, log.intensity,
-         log.weather_main, log.weather_desc, log.weather_temp, log.note),
+         log.weather_main, log.weather_desc, log.weather_temp,
+         log.note, log.image_data),
     )
     row = c.fetchone()
     conn.commit()
@@ -111,6 +122,39 @@ def get_logs(limit: int = 300):
     c.close()
     conn.close()
     return [dict(r) for r in rows]
+
+
+@app.patch("/logs/{log_id}", response_model=LogResponse)
+def update_log(log_id: int, updates: LogUpdate):
+    conn = get_db()
+    c = cur(conn)
+    c.execute(
+        """UPDATE logs
+           SET action_type = %s, note = %s, image_data = %s
+           WHERE id = %s RETURNING *""",
+        (
+            updates.action_type,
+            updates.note if updates.note else None,
+            updates.image_data if updates.image_data else None,
+            log_id,
+        ),
+    )
+    row = c.fetchone()
+    conn.commit()
+    c.close()
+    conn.close()
+    return dict(row)
+
+
+@app.delete("/logs/{log_id}")
+def delete_log(log_id: int):
+    conn = get_db()
+    c = cur(conn)
+    c.execute("DELETE FROM logs WHERE id = %s", (log_id,))
+    conn.commit()
+    c.close()
+    conn.close()
+    return {"ok": True}
 
 
 @app.get("/stats")
@@ -147,7 +191,7 @@ def get_stats():
     streak = 0
     today = date.today()
     for i, row in enumerate(dates):
-        d = row["d"]  # psycopg2 は date オブジェクトで返す
+        d = row["d"]
         if d == today - timedelta(days=i):
             streak += 1
         else:
@@ -208,14 +252,3 @@ def get_recommend(mood: str = "疲労", hour: int = 12, weather: str = "Clear"):
         results.append(d)
 
     return results
-
-
-@app.delete("/logs/{log_id}")
-def delete_log(log_id: int):
-    conn = get_db()
-    c = cur(conn)
-    c.execute("DELETE FROM logs WHERE id = %s", (log_id,))
-    conn.commit()
-    c.close()
-    conn.close()
-    return {"ok": True}

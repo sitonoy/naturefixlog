@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -18,6 +18,29 @@ const weatherCodeToInfo = (code) => {
   return { main: 'Thunder', label: '雷雨', emoji: '⛈️' };
 };
 
+// 画像を最大800pxにリサイズしてJPEG base64で返す
+const resizeImage = (file) => new Promise((resolve) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
 export default function HomeTab() {
   const [actionType, setActionType] = useState('walk');
   const [intensity, setIntensity] = useState(2);
@@ -25,9 +48,13 @@ export default function HomeTab() {
   const [locError, setLocError] = useState(false);
   const [weather, setWeather] = useState(null);
   const [note, setNote] = useState('');
+  const [imageData, setImageData] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [totalCount, setTotalCount] = useState(0);
   const [backendReady, setBackendReady] = useState(false);
+
+  const cameraRef = useRef(null);
+  const galleryRef = useRef(null);
 
   const fetchWeather = useCallback((lat, lng) => {
     fetch(
@@ -57,8 +84,16 @@ export default function HomeTab() {
     fetch(`${API}/stats`)
       .then(r => r.json())
       .then(d => { setTotalCount(d.total); setBackendReady(true); })
-      .catch(() => setBackendReady(true)); // エラーでも解放
+      .catch(() => setBackendReady(true));
   }, [fetchWeather]);
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const resized = await resizeImage(file);
+    setImageData(resized);
+    e.target.value = '';
+  };
 
   const handleLog = async () => {
     if (!location) {
@@ -80,12 +115,14 @@ export default function HomeTab() {
           weather_desc: weather?.label ?? null,
           weather_temp: weather?.temp ?? null,
           note: note || null,
+          image_data: imageData || null,
         }),
       });
       if (res.ok) {
         setStatus('success');
         setTotalCount(c => c + 1);
         setNote('');
+        setImageData(null);
         setTimeout(() => setStatus('idle'), 2500);
       } else {
         throw new Error();
@@ -184,13 +221,59 @@ export default function HomeTab() {
       </div>
 
       {/* Note */}
-      <div className="w-full">
+      <div className="w-full mb-4">
         <textarea
           value={note}
           onChange={e => setNote(e.target.value)}
           placeholder="メモ（任意）— どんな環境だった？"
           className="w-full bg-gray-800/60 text-white rounded-xl p-3 text-sm placeholder-gray-600 border border-gray-700 focus:outline-none focus:border-green-600 resize-none"
           rows={2}
+        />
+      </div>
+
+      {/* Photo */}
+      <div className="w-full">
+        <p className="text-gray-400 text-xs mb-2 tracking-widest uppercase">写真（任意・1枚）</p>
+        {imageData ? (
+          <div className="relative">
+            <img src={imageData} className="w-full rounded-xl object-cover max-h-48" alt="preview" />
+            <button
+              onClick={() => setImageData(null)}
+              className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm"
+            >✕</button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => cameraRef.current?.click()}
+              className="flex-1 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-gray-400 text-sm flex flex-col items-center gap-1"
+            >
+              <span className="text-xl">📷</span>
+              <span className="text-xs">カメラ</span>
+            </button>
+            <button
+              onClick={() => galleryRef.current?.click()}
+              className="flex-1 py-3 rounded-xl border border-gray-700 bg-gray-800/60 text-gray-400 text-sm flex flex-col items-center gap-1"
+            >
+              <span className="text-xl">🖼️</span>
+              <span className="text-xs">フォルダ</span>
+            </button>
+          </div>
+        )}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
         />
       </div>
     </div>
