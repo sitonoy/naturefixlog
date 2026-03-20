@@ -410,6 +410,10 @@ export default function MapTab({ isActive }) {
   useEffect(() => {
     if (isActive) {
       const t = setTimeout(() => mapRef.current?.invalidateSize(), 50);
+      fetch(`${API}/logs`)
+        .then(r => r.json())
+        .then(data => setLogs(data))
+        .catch(() => {});
       return () => clearTimeout(t);
     }
   }, [isActive]);
