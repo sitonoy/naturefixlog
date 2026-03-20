@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const ACTION_LABEL = { walk: '🚶 歩く', stay: '🪑 座る', pass: '✨ ふと' };
+const ACTION_LABEL = { walk: '🚶 歩きながら', stay: '🪑 座って', pass: '🧍 立ち止まって' };
 const PIE_COLORS = ['#4ade80', '#60a5fa', '#fbbf24'];
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -65,13 +65,13 @@ export default function AnalyticsTab() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white px-4 pb-24">
-      <h1 className="text-xl font-bold text-green-400 pt-10 mb-6">回復パターン分析</h1>
+      <h1 className="text-xl font-bold text-green-400 pt-10 mb-6">記録パターン分析</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-gray-800/70 rounded-xl p-3 text-center border border-gray-700">
           <p className="text-2xl font-bold text-green-400">{stats.total}</p>
-          <p className="text-xs text-gray-400 mt-1">総回復数</p>
+          <p className="text-xs text-gray-400 mt-1">総記録数</p>
         </div>
         <div className="bg-gray-800/70 rounded-xl p-3 text-center border border-gray-700">
           <p className="text-2xl font-bold text-blue-400">{stats.streak}</p>

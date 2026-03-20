@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const ACTION_TYPES = [
-  { id: 'walk', label: '歩く', emoji: '🚶' },
-  { id: 'stay', label: '座る', emoji: '🪑' },
-  { id: 'pass', label: 'ふと', emoji: '✨' },
+  { id: 'walk', label: '歩きながら', emoji: '🚶' },
+  { id: 'stay', label: '座って', emoji: '🪑' },
+  { id: 'pass', label: '立ち止まって', emoji: '🧍' },
 ];
 
 const weatherCodeToInfo = (code) => {
@@ -108,8 +108,8 @@ export default function HomeTab() {
     <div className="flex flex-col items-center min-h-screen bg-gray-950 text-white px-5 pb-24">
       {/* Header */}
       <div className="w-full text-center pt-10 mb-6">
-        <h1 className="text-2xl font-bold text-green-400 tracking-wide">回復ログ</h1>
-        <p className="text-gray-500 text-sm mt-1">累計 {totalCount} 回の回復</p>
+        <h1 className="text-2xl font-bold text-green-400 tracking-wide">NatureFixログ</h1>
+        <p className="text-gray-500 text-sm mt-1">累計 {totalCount} 件の記録</p>
       </div>
 
       {/* Location & Weather chips */}
@@ -128,7 +128,7 @@ export default function HomeTab() {
         disabled={status === 'loading'}
         className={`w-44 h-44 rounded-full text-xl font-bold shadow-2xl transition-all duration-300 mb-10 ${btnStyle}`}
       >
-        {status === 'success' ? '✓ 記録した！' : status === 'error' ? '❌ 失敗' : '回復した\n✨'}
+        {status === 'success' ? '✓ 記録しました' : status === 'error' ? '❌ 失敗' : 'この場所を\n記録する'}
       </button>
 
       {/* Action Type */}

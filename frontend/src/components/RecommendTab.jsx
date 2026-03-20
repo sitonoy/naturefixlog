@@ -8,7 +8,7 @@ const MOODS = [
   { id: '思考', label: '考えすぎ', emoji: '🌀' },
 ];
 
-const ACTION_LABEL = { walk: '🚶 歩く', stay: '🪑 座る', pass: '✨ ふと' };
+const ACTION_LABEL = { walk: '🚶 歩きながら', stay: '🪑 座って', pass: '🧍 立ち止まって' };
 
 const weatherCodeToMain = (code) => {
   if (code === 0) return 'Clear';

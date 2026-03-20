@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const INTENSITY_COLOR = { 1: '#86efac', 2: '#4ade80', 3: '#16a34a' };
-const ACTION_LABEL = { walk: '🚶 歩く', stay: '🪑 座る', pass: '✨ ふと' };
+const ACTION_LABEL = { walk: '🚶 歩きながら', stay: '🪑 座って', pass: '🧍 立ち止まって' };
 const FILTER_OPTIONS = [
   { id: 'all', label: 'すべて' },
   { id: 'walk', label: '🚶' },
@@ -26,6 +26,7 @@ export default function MapTab() {
   const [center, setCenter] = useState([35.6762, 139.6503]);
   const [filter, setFilter] = useState('all');
   const [recentered, setRecentered] = useState(false);
+  const [currentPos, setCurrentPos] = useState(null);
 
   useEffect(() => {
     fetch(`${API}/logs`)
@@ -40,7 +41,9 @@ export default function MapTab() {
       .catch(() => {});
 
     navigator.geolocation?.getCurrentPosition(pos => {
-      setCenter([pos.coords.latitude, pos.coords.longitude]);
+      const { latitude, longitude } = pos.coords;
+      setCurrentPos([latitude, longitude]);
+      setCenter([latitude, longitude]);
       setRecentered(true);
     });
   }, []);
@@ -83,6 +86,24 @@ export default function MapTab() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
+        {currentPos && (
+          <CircleMarker
+            center={currentPos}
+            radius={10}
+            pathOptions={{
+              color: '#3b82f6',
+              fillColor: '#60a5fa',
+              fillOpacity: 0.9,
+              weight: 3,
+            }}
+          >
+            <Popup>
+              <div style={{ minWidth: 100 }}>
+                <p style={{ margin: 0, fontWeight: 'bold' }}>📍 現在地</p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        )}
         {filtered.map(log => (
           <CircleMarker
             key={log.id}
@@ -96,7 +117,7 @@ export default function MapTab() {
             }}
           >
             <Popup>
-              <div style={{ minWidth: 140 }}>
+              <div style={{ minWidth: 160 }}>
                 <p style={{ margin: '0 0 4px', fontWeight: 'bold' }}>
                   {ACTION_LABEL[log.action_type] || log.action_type}
                 </p>
@@ -109,11 +130,19 @@ export default function MapTab() {
                 {log.note && (
                   <p style={{ margin: '0 0 2px', fontStyle: 'italic' }}>{log.note}</p>
                 )}
-                <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>
+                <p style={{ margin: '4px 0 4px', fontSize: 11, color: '#9ca3af' }}>
                   {new Date(log.timestamp).toLocaleString('ja-JP', {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                   })}
                 </p>
+                <a
+                  href={`https://maps.google.com/?q=${log.lat},${log.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 12, color: '#3b82f6' }}
+                >
+                  🗺️ Google Maps で開く
+                </a>
               </div>
             </Popup>
           </CircleMarker>
