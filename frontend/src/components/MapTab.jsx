@@ -96,6 +96,7 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
   const [editIntensity, setEditIntensity] = useState(log.intensity);
   const [editNote, setEditNote] = useState(log.note || '');
   const [editImage, setEditImage] = useState(log.image_data || null);
+  const [editImageFile, setEditImageFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const imgRef = useRef(null);
 
@@ -104,6 +105,7 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
     setEditIntensity(log.intensity);
     setEditNote(log.note || '');
     setEditImage(log.image_data || null);
+    setEditImageFile(null);
     setMode('view');
   }, [log.id]);
 
@@ -112,14 +114,15 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
     setEditIntensity(log.intensity);
     setEditNote(log.note || '');
     setEditImage(log.image_data || null);
+    setEditImageFile(null);
     setMode('edit');
   };
 
-  const handleImageSelect = async (e) => {
+  const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const resized = await resizeImage(file);
-    if (resized) setEditImage(resized);
+    setEditImageFile(file);
+    setEditImage(URL.createObjectURL(file));
     e.target.value = '';
   };
 
@@ -132,6 +135,11 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
   const handleSave = async () => {
     setBusy(true);
     try {
+      let imageData = editImage || '';
+      if (editImageFile) {
+        const resized = await resizeImage(editImageFile);
+        imageData = resized || imageData;
+      }
       const res = await fetch(`${API}/logs/${log.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -139,7 +147,7 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
           action_type: editAction,
           intensity: editIntensity,
           note: editNote,
-          image_data: editImage || '',
+          image_data: imageData,
         }),
       });
       onUpdate(await res.json());
@@ -196,7 +204,7 @@ function BottomSheetCard({ log, onDelete, onUpdate, onPreview }) {
       {editImage ? (
         <div style={{ position: 'relative', marginBottom: 6 }}>
           <img src={editImage} style={{ width: '100%', maxHeight: 72, objectFit: 'cover', borderRadius: 4 }} alt="" />
-          <button onClick={() => setEditImage(null)}
+          <button onClick={() => { setEditImage(null); setEditImageFile(null); }}
             style={{ position: 'absolute', top: 3, right: 3, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 10 }}>✕</button>
         </div>
       ) : (

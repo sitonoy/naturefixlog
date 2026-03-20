@@ -55,7 +55,8 @@ export default function HomeTab() {
   const [locError, setLocError] = useState(false);
   const [weather, setWeather] = useState(null);
   const [note, setNote] = useState('');
-  const [imageData, setImageData] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | loading | success | error
   const [totalCount, setTotalCount] = useState(0);
   const [backendReady, setBackendReady] = useState(false);
@@ -94,11 +95,11 @@ export default function HomeTab() {
       .catch(() => setBackendReady(true));
   }, [fetchWeather]);
 
-  const handleImageSelect = async (e) => {
+  const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const resized = await resizeImage(file);
-    if (resized) setImageData(resized);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
     e.target.value = '';
   };
 
@@ -110,6 +111,7 @@ export default function HomeTab() {
     }
     setStatus('loading');
     try {
+      const imageData = imageFile ? await resizeImage(imageFile) : null;
       const res = await fetch(`${API}/logs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,7 +131,8 @@ export default function HomeTab() {
         setStatus('success');
         setTotalCount(c => c + 1);
         setNote('');
-        setImageData(null);
+        setImageFile(null);
+        setImagePreview(null);
         setTimeout(() => setStatus('idle'), 2500);
       } else {
         throw new Error();
@@ -235,11 +238,11 @@ export default function HomeTab() {
       {/* Photo */}
       <div className="w-full">
         <p className="text-gray-400 text-xs mb-2 tracking-widest uppercase">写真（任意・1枚）</p>
-        {imageData ? (
+        {imagePreview ? (
           <div className="relative">
-            <img src={imageData} className="w-full rounded-xl object-cover max-h-48" alt="preview" />
+            <img src={imagePreview} className="w-full rounded-xl object-cover max-h-48" alt="preview" />
             <button
-              onClick={() => setImageData(null)}
+              onClick={() => { setImageFile(null); setImagePreview(null); }}
               className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm"
             >✕</button>
           </div>
